@@ -1,0 +1,2 @@
+"""FaceGuard backend application package."""
+
