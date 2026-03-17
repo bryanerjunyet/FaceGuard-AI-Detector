@@ -24,3 +24,23 @@ export async function analyzeImage(file) {
   return payload;
 }
 
+export async function signIn(credentials) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/signin`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(credentials)
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    const { detail } = payload;
+    if (Array.isArray(detail)) {
+      throw new Error(detail.map((item) => item?.msg).filter(Boolean).join("; ") || "Sign in failed.");
+    }
+    throw new Error(detail || "Sign in failed.");
+  }
+  return payload;
+}
+

@@ -1,11 +1,41 @@
 import { useState } from "react";
+import { signIn } from "@/api/client";
 
 export default function SignInPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setMessage("Authentication is a planned post-MVP feature. This screen is a prototype placeholder.");
+
+    const formData = new FormData(event.currentTarget);
+    const submittedEmail = String(formData.get("email") || "").trim();
+    const submittedPassword = String(formData.get("password") || "");
+
+    if (!submittedEmail || !submittedPassword) {
+      setIsError(true);
+      setMessage("Email and password are required.");
+      return;
+    }
+
+    setMessage("");
+    setIsError(false);
+    setIsSubmitting(true);
+
+    try {
+      const response = await signIn({ email: submittedEmail, password: submittedPassword });
+      setMessage(response.message || "Sign in successful.");
+      setEmail(submittedEmail);
+      setPassword("");
+    } catch (error) {
+      setIsError(true);
+      setMessage(error.message || "Unable to sign in.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -14,14 +44,32 @@ export default function SignInPage() {
         <h2>Sign In (Prototype)</h2>
         <form onSubmit={handleSubmit}>
           <label htmlFor="email">Email</label>
-          <input id="email" type="email" placeholder="name@example.com" required />
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="name@example.com"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
           <label htmlFor="password">Password</label>
-          <input id="password" type="password" placeholder="********" required />
-          <button className="primary-btn" type="submit">
-            Sign In
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="********"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <button className="primary-btn" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Signing In..." : "Sign In"}
           </button>
         </form>
-        {message ? <p className="panel-note">{message}</p> : null}
+        {message ? <p className="panel-note">{isError ? `Error: ${message}` : message}</p> : null}
       </section>
     </main>
   );

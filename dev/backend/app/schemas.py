@@ -15,3 +15,13 @@ class PredictionResponse(BaseModel):
     explanation: str
     model_name: str
 
+
+class SignInRequest(BaseModel):
+    email: str = Field(default="", max_length=320)
+    password: str = Field(default="", max_length=128)
+
+
+class SignInResponse(BaseModel):
+    success: bool = True
+    message: str
+

@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .core.settings_loader import load_settings
-from .schemas import HealthResponse, PredictionResponse
+from .schemas import HealthResponse, PredictionResponse, SignInRequest, SignInResponse
+from .services.auth_service import AuthService
 from .services.model_service import model_service_from_settings
 from .services.preprocessing import image_to_tensor, strip_exif_and_load_image, validate_upload
 from .services.storage_placeholder import StoragePlaceholder
@@ -14,6 +15,12 @@ from .services.storage_placeholder import StoragePlaceholder
 settings = load_settings()
 model_service = model_service_from_settings(settings)
 storage = StoragePlaceholder(enabled=settings.enable_database)
+auth_service = AuthService(
+    enabled=settings.enable_database,
+    database_url=settings.database_url,
+    database_name=settings.database_name,
+    users_collection=settings.users_collection,
+)
 
 
 app = FastAPI(
@@ -46,6 +53,25 @@ def health() -> HealthResponse:
         model_ready=model_service.model_ready,
         model_name=settings.model_name,
     )
+
+
+@app.post("/api/auth/signin", response_model=SignInResponse)
+def sign_in(payload: SignInRequest) -> SignInResponse:
+    email = payload.email.strip()
+    password = payload.password
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password are required.")
+
+    success, message, status_code = auth_service.authenticate(
+        email=email,
+        password=password,
+    )
+
+    if not success:
+        raise HTTPException(status_code=status_code, detail=message)
+
+    return SignInResponse(success=True, message=message)
 
 
 @app.post("/api/analyze", response_model=PredictionResponse)
